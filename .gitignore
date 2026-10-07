@@ -1,0 +1,37 @@
+# 构建输出
+bin/
+obj/
+out/
+
+# ★ 自测程序会把**游戏原装的程序集**复制到自己的输出目录
+#   （sts2.dll 9.5 MB / GodotSharp.dll 5.5 MB / 0Harmony.dll / Sentry.dll /
+#    Steamworks.NET.dll / Vortice.* …，合计约 20 MB）。
+#   那些是游戏的版权文件，既不能进公开仓库，也不能进任何发布包 —— 必须忽略。
+selftest/bin/
+selftest/obj/
+
+# 本机专属路径（换机器时各人自己写；Sts2GameDir 也可以在命令行用 -p: 覆盖）
+local.props
+*.user
+
+# NuGet 还原目录
+packages/
+
+# IDE
+.vs/
+.idea/
+
+# release.ps1 的临时装配目录（每次打包都会先删掉重建，不入库）
+dist/stage/
+
+# ─────────────────────────────────────────────────────────────
+# 刻意**保留在版本控制**里的目录（不要加进来）：
+#
+#   dist/*.zip   发布包。保留它，方便直接上传 GitHub Releases 而不必重跑构建。
+#                （包内**已经有**模组目录，解压即用，所以 dist\stage\ 不需要留。）
+#
+# ─────────────────────────────────────────────────────────────
+
+# 临时文件
+*.tmp
+commit-msg*.txt

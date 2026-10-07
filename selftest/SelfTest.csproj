@@ -1,0 +1,80 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>DeeperAndTankierSelfTest</AssemblyName>
+    <RootNamespace>DeeperAndTankier.SelfTest</RootNamespace>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Sts2GameDir Condition="'$(Sts2GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Slay the Spire 2</Sts2GameDir>
+    <Sts2ManagedDir>$(Sts2GameDir)\data_sts2_windows_x86_64</Sts2ManagedDir>
+    <!-- CYLib 工程的位置（本仓库不含 CYLib）。默认「与本仓库同级」，
+         别处布局用 -p:CyLibDir=D:\path\to\CYLib 覆盖。 -->
+    <CyLibDir Condition="'$(CyLibDir)' == ''">$(MSBuildThisFileDirectory)..\..\CYLib</CyLibDir>
+  </PropertyGroup>
+
+  <!-- 游戏程序集：复制到输出目录，让测试程序可以独立运行 -->
+  <ItemGroup>
+    <Reference Include="sts2">
+      <HintPath>$(Sts2ManagedDir)\sts2.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="GodotSharp">
+      <HintPath>$(Sts2ManagedDir)\GodotSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(Sts2ManagedDir)\0Harmony.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="MonoMod.Backports">
+      <HintPath>$(Sts2ManagedDir)\MonoMod.Backports.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="MonoMod.ILHelpers">
+      <HintPath>$(Sts2ManagedDir)\MonoMod.ILHelpers.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Steamworks.NET">
+      <HintPath>$(Sts2ManagedDir)\Steamworks.NET.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="SmartFormat">
+      <HintPath>$(Sts2ManagedDir)\SmartFormat.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <!-- CYLib：配置平台。测试程序独立运行，需要复制到输出目录（与模组的 Private=false 不同）。
+         ★ 复制出来的 CYLib.dll 落在 bin\ 里，而 bin\ 是 gitignore 的，不会进公开仓库。 -->
+    <Reference Include="CYLib">
+      <HintPath>$(CyLibDir)\dist\CYLib\CYLib.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CheckCyLibReference" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(CyLibDir)\dist\CYLib\CYLib.dll')"
+           Text="找不到 CYLib：'$(CyLibDir)\dist\CYLib\CYLib.dll'。请把 https://github.com/caiying-dato/CYLib 克隆到本仓库的**同级目录**并跑一次 deploy.cmd，或用 -p:CyLibDir=&lt;CYLib 所在目录&gt; 指定位置。" />
+  </Target>
+
+  <!-- 复用模组源码：测的就是游戏里跑的同一份逻辑 -->
+  <ItemGroup>
+    <Compile Include="..\src\HpScaling.cs" Link="mod\HpScaling.cs" />
+    <Compile Include="..\src\DtLog.cs" Link="mod\DtLog.cs" />
+    <Compile Include="..\src\EffectPreview.cs" Link="mod\EffectPreview.cs" />
+    <Compile Include="..\src\DeeperAndTankierMod.cs" Link="mod\DeeperAndTankierMod.cs" />
+    <Compile Include="..\src\Net\DatConfigSync.cs" Link="mod\DatConfigSync.cs" />
+    <Compile Include="..\src\Buffs\HardToKillScaling.cs" Link="mod\HardToKillScaling.cs" />
+    <Compile Include="..\src\Patches\HardToKillPatch.cs" Link="mod\HardToKillPatch.cs" />
+    <Compile Include="..\src\Patches\NetSyncPatches.cs" Link="mod\NetSyncPatches.cs" />
+    <Compile Include="..\src\Patches\MonsterHpPatches.cs" Link="mod\MonsterHpPatches.cs" />
+  </ItemGroup>
+
+</Project>

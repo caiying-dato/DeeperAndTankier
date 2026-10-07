@@ -1,0 +1,84 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>DeeperAndTankier</AssemblyName>
+    <RootNamespace>DeeperAndTankier</RootNamespace>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <!-- 版本号：三处一起改（release.ps1 会自动改），必须与 src\DeeperAndTankier.json 的 version 一致；
+         发布前 release.ps1 会核对编译出的 DLL FileVersion 是否等于它 -->
+    <Version>0.1.3</Version>
+    <AssemblyVersion>0.1.3.0</AssemblyVersion>
+    <FileVersion>0.1.3.0</FileVersion>
+    <!-- 由 SDK 生成 AssemblyInfo：上面三个版本号靠它才会真正写进 DLL
+         （2026-10-04 起由 false 改为 true，此前 DLL 的 FileVersion 一直是 0.0.0.0） -->
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <!-- 模组程序集不复制游戏 DLL，游戏进程里已有 -->
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <DebugType>portable</DebugType>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
+
+  <!-- ============ 游戏程序集路径（如换机器/换盘，只改这里） ============ -->
+  <PropertyGroup>
+    <Sts2GameDir Condition="'$(Sts2GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Slay the Spire 2</Sts2GameDir>
+    <Sts2ManagedDir>$(Sts2GameDir)\data_sts2_windows_x86_64</Sts2ManagedDir>
+    <Sts2ModsDir>$(Sts2GameDir)\mods</Sts2ModsDir>
+    <!-- 构建后自动安装到游戏 mods 目录；不想自动安装就加 -p:AutoInstall=false -->
+    <AutoInstall Condition="'$(AutoInstall)' == ''">true</AutoInstall>
+
+    <!-- CYLib 工程的位置。本仓库**不包含** CYLib，但编译期需要它的 dist\CYLib\CYLib.dll。
+         默认按「与本仓库同级」找：<本仓库的父目录>\CYLib。
+         别处的布局用 -p:CyLibDir=D:\path\to\CYLib 覆盖。 -->
+    <CyLibDir Condition="'$(CyLibDir)' == ''">$(MSBuildThisFileDirectory)..\..\CYLib</CyLibDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="sts2">
+      <HintPath>$(Sts2ManagedDir)\sts2.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="GodotSharp">
+      <HintPath>$(Sts2ManagedDir)\GodotSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(Sts2ManagedDir)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- CYLib：配置平台。Private=false 很重要——CYLib.dll 由 mods/CYLib/ 提供，
+         复制一份到本模组目录会造成同一程序集被加载两次、类型身份分裂。 -->
+    <Reference Include="CYLib">
+      <HintPath>$(CyLibDir)\dist\CYLib\CYLib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- 找不到 CYLib 时给出明确指引，而不是让它烂成一堆 CS0246 找不到类型 -->
+  <Target Name="CheckCyLibReference" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(CyLibDir)\dist\CYLib\CYLib.dll')"
+           Text="找不到 CYLib：'$(CyLibDir)\dist\CYLib\CYLib.dll'。本仓库不包含 CYLib —— 请把 https://github.com/caiying-dato/CYLib 克隆到本仓库的**同级目录**，并在 CYLib 里跑一次 deploy.cmd 生成 dist\CYLib\CYLib.dll；或者用 -p:CyLibDir=&lt;CYLib 所在目录&gt; 指定位置。" />
+  </Target>
+
+  <ItemGroup>
+    <None Include="DeeperAndTankier.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- ============ 构建后安装到 mods\DeeperAndTankier ============ -->
+  <Target Name="InstallToGameMods" AfterTargets="Build" Condition="'$(AutoInstall)' == 'true'">
+    <ItemGroup>
+      <DtInstallFiles Include="$(TargetDir)$(AssemblyName).dll" />
+      <DtInstallFiles Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+      <DtInstallFiles Include="$(TargetDir)DeeperAndTankier.json" />
+    </ItemGroup>
+    <MakeDir Directories="$(Sts2ModsDir)\DeeperAndTankier" />
+    <Copy SourceFiles="@(DtInstallFiles)" DestinationFolder="$(Sts2ModsDir)\DeeperAndTankier" ContinueOnError="true" />
+    <Message Importance="high" Text="[DeeperAndTankier] 已安装到 $(Sts2ModsDir)\DeeperAndTankier" />
+  </Target>
+
+</Project>
